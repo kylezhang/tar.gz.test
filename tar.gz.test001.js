@@ -4,17 +4,22 @@ let md5     = require('md5')
 let FTP     = require('ftp')
 let moment  = require('moment')
 
-let read    = targz().createReadStream('../ftp_test/')
+const dataFile                  = 'data.tar.gz'
+const md5File                   = 'data.md5'
+const successFile               = 'data.success'
 
-const compressedFile            = '../20161115/data.tar.gz'
-const md5FileWithCompressedFile = '../20161115/data.md5'
-const successFile               = '../20161115/data.success'
+const path_prefix                = moment().format('YYYYMMDD')
 
-const path_prefix = moment().format('YYYYMMDD')
-const destFilePathArr = [`${path_prefix}/data.tar.gz`, `${path_prefix}/data.md5`, `${path_prefix}/data.success`]
-let destFilePathFnArr = []
+const compressedFile            = `${path_prefix}/${dataFile}`
+const md5WithCompressedFile     = `${path_prefix}/${md5File}`
+const successWithMd5File        = `${path_prefix}/${successFile}`
 
-let write   = fs.createWriteStream(compressedFile)
+const sourceFilePathArr         = [compressedFile, md5WithCompressedFile, successWithMd5File]
+
+let destFilePathFnArr           = []
+
+let read                        = targz().createReadStream('../https_test/')
+let write                       = fs.createWriteStream(compressedFile)
 
 //compressed file write to local
 read.pipe(write)
@@ -25,14 +30,15 @@ fs.readFile(compressedFile, (err, buf) => {
   console.log('md5_message:', md5_message)
 
   //md5 file write to local
-  fs.writeFile(md5FileWithCompressedFile, md5_message, (err) => {
+  fs.writeFile(md5WithCompressedFile, md5_message, (err) => {
     if(err) throw `md5 file wrote error:${err}`
     console.log('md5 file wrote successfully!')
 
     //success file write to local
-    fs.writeFile(successFile, (err) => {
+    fs.writeFile(successWithMd5File, (err) => {
       if(err) throw `success file wrote error: ${err}`
       console.log('success file wrote successfully!!')
+      
       upload()
     })
   })
@@ -42,32 +48,32 @@ fs.readFile(compressedFile, (err, buf) => {
 const upload = () => {
   let ftpC = new FTP()
 
-  destFilePathArr.forEach((item) => {
+  sourceFilePathArr.forEach((item) => {
     destFilePathFnArr.push({
-      key : () => {
+      fn : () => {
         ftpC.on('ready', () => {
-          ftpC.put(item, item, (err) => {
+          ftpC.append(item, `upload/${item}`, (err) => {
             if(err) throw `upload file ${item} fail,${err}`
+            console.log(`${item} uploaded successfully!!!`)
           })
         })
       }
-      })
+    })  
   })
 
   ftpC.connect({
     host : 'localhost',
-    user: 'kai',
-    password: '123456a?'
+    user: 'zhangkai',
+    password: 'abc=456'
   })
 
   Promise.all(destFilePathFnArr).then(values => {
-    console.log(values)
     values.forEach(item => {
-      item.key()
+      item.fn()
     })
-  }).catch(err => {
+  })
+  .catch(err => {
     console.log(err)
     ftpC.end()
-    ftpC.close()
   })
 }
