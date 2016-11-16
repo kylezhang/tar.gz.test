@@ -20,8 +20,13 @@ let destFilePathFnArr           = []
 
 const sourceTarget              = '../ftp_test/'
 let read                        = targz().createReadStream(sourceTarget)
-let write                       = fs.createWriteStream(compressedFile)
 
+//create directory
+if(!fs.existsSync(path_prefix)){
+  fs.mkdirSync(path_prefix)
+}
+
+let write                       = fs.createWriteStream(compressedFile)
 //compressed file write to local
 read.pipe(write)
 
@@ -48,7 +53,7 @@ fs.readFile(compressedFile, (err, buf) => {
 // use ftp upload 3 files to ftp server
 const upload = () => {
   let ftpC = new FTP()
-  
+
   destFilePathFnArr.push({
     fn : () => {
       ftpC.mkdir(`upload/${path_prefix}`, true, (err) => {
