@@ -18,7 +18,8 @@ const sourceFilePathArr         = [compressedFile, md5WithCompressedFile, succes
 
 let destFilePathFnArr           = []
 
-let read                        = targz().createReadStream('../https_test/')
+const sourceTarget              = '../ftp_test/'
+let read                        = targz().createReadStream(sourceTarget)
 let write                       = fs.createWriteStream(compressedFile)
 
 //compressed file write to local
@@ -35,7 +36,7 @@ fs.readFile(compressedFile, (err, buf) => {
     console.log('md5 file wrote successfully!')
 
     //success file write to local
-    fs.writeFile(successWithMd5File, (err) => {
+    fs.writeFile(successWithMd5File, 'success', (err) => {
       if(err) throw `success file wrote error: ${err}`
       console.log('success file wrote successfully!!')
       
@@ -47,24 +48,35 @@ fs.readFile(compressedFile, (err, buf) => {
 // use ftp upload 3 files to ftp server
 const upload = () => {
   let ftpC = new FTP()
+  
+  destFilePathFnArr.push({
+    fn : () => {
+      ftpC.mkdir(`upload/${path_prefix}`, true, (err) => {
+          if(err) throw `created path: upload/${path_prefix} on ftp server fail, ${err}`
+          console.log(`created path: upload/${path_prefix} on ftp server successfully!!!`)
+    })
+    }
+  })
 
   sourceFilePathArr.forEach((item) => {
     destFilePathFnArr.push({
       fn : () => {
         ftpC.on('ready', () => {
-          ftpC.append(item, `upload/${item}`, (err) => {
+          ftpC.put(item, `upload/${item}`, (err) => {
             if(err) throw `upload file ${item} fail,${err}`
             console.log(`${item} uploaded successfully!!!`)
+            ftpC.end()
           })
         })
       }
     })  
   })
+  
 
   ftpC.connect({
     host : 'localhost',
-    user: 'zhangkai',
-    password: 'abc=456'
+    user: 'kai',
+    password: '123456a?'
   })
 
   Promise.all(destFilePathFnArr).then(values => {
